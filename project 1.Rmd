@@ -1,0 +1,371 @@
+---
+title: "Project 1"
+author: "Yao Shi"
+date: "September 13, 2017"
+output: pdf_document
+---
+
+
+select features
+```{r}
+library(magrittr)
+library(corrplot)
+library(ggplot2)
+library(dplyr)
+
+hour <- read.csv("E:\\Desktop\\BUAN courses\\course for 17fall\\6341 machine learning\\project\\project1\\hour.csv")
+hour
+corrplot(cor(hour[,3:14], hour$cnt ))
+corrplot(cor(hour[,3:14]))
+```
+
+```{r}
+model_data <- cbind.data.frame(hour[,c(11,13,17)])
+model_data
+summary(model_data)
+library(ggplot2)
+plot_dis <- ggplot(model_data, aes(x = cnt)) + geom_histogram()
+plot_dis
+data_1 <- rep(1, nrow(model_data))
+
+  dummy <- function(var,q){
+  name <- c()
+  for (n in 1:length(var)){
+  if (var[n] == q)
+  { name <- append(name, 1)}
+  else if (var[n] !=q)
+           {name <- append(name, 0)}      
+  }
+  return(name)
+  }
+spring <- dummy(var = hour$season,q=1)
+summer <- dummy(var = hour$season,q=2)
+fall <- dummy(var = hour$season,q=3)
+month_1 <- dummy(var = hour$mnth,q=1)
+month_2 <- dummy(var = hour$mnth,q=2)
+month_3 <- dummy(var = hour$mnth,q=3)
+month_4 <- dummy(var = hour$mnth,q=4)
+month_5 <- dummy(var = hour$mnth,q=5)
+month_6 <- dummy(var = hour$mnth,q=6)
+month_7 <- dummy(var = hour$mnth,q=7)
+month_8 <- dummy(var = hour$mnth,q=8)
+month_9 <- dummy(var = hour$mnth,q=9)
+month_10<- dummy(var = hour$mnth,q=10)
+month_11<- dummy(var = hour$mnth,q=11)
+hour_0<- dummy(var = hour$hr,q=0)
+hour_1<- dummy(var = hour$hr,q=1)
+hour_2<- dummy(var = hour$hr,q=2)
+hour_3<- dummy(var = hour$hr,q=3)
+hour_4<- dummy(var = hour$hr,q=4)
+hour_5<- dummy(var = hour$hr,q=5)
+hour_6<- dummy(var = hour$hr,q=6)
+hour_7<- dummy(var = hour$hr,q=7)
+hour_8<- dummy(var = hour$hr,q=8)
+hour_9<- dummy(var = hour$hr,q=9)
+hour_10<- dummy(var = hour$hr,q=10)
+hour_11<- dummy(var = hour$hr,q=11)
+hour_12<- dummy(var = hour$hr,q=12)
+hour_13<- dummy(var = hour$hr,q=13)
+hour_14<- dummy(var = hour$hr,q=14)
+hour_15<- dummy(var = hour$hr,q=15)
+hour_16<- dummy(var = hour$hr,q=16)
+hour_17<- dummy(var = hour$hr,q=17)
+hour_18<- dummy(var = hour$hr,q=18)
+hour_19<- dummy(var = hour$hr,q=19)
+hour_20<- dummy(var = hour$hr,q=20)
+hour_21<- dummy(var = hour$hr,q=21)
+hour_22<- dummy(var = hour$hr,q=22)
+weather_1<- dummy(var = hour$weathersit,q=1)
+weather_2<- dummy(var = hour$weathersit,q=2)
+weather_3<- dummy(var = hour$weathersit,q=3)
+dummy_data <- cbind(month_1,month_2,month_3,month_4,month_5,month_6,month_7,month_8,month_9,month_10,month_11,
+                    hour_0,hour_1,hour_2,hour_3,hour_4,hour_5,hour_6,hour_7,hour_8,hour_9,hour_10,hour_11,hour_12,hour_13,
+                    hour_14,hour_15,hour_16,hour_17,hour_18,hour_19,hour_20,hour_21,hour_22,weather_1,weather_2,weather_3)
+
+
+final_data <- cbind(data_1,model_data,dummy_data)
+
+set.seed(1689)
+ind <- sample(2,nrow(final_data), replace = TRUE, prob=c(0.7,0.30))
+train <- final_data[ind==1,]
+test <- final_data[ind==2,]
+
+x_train <- as.matrix(train[-4])
+cnt <- data.frame(train$cnt)
+x_test <- as.matrix(test[-4])
+y_test <-data.frame(test$cnt)
+
+
+```
+
+```{r}
+GetCal <- function(x, y){
+      return(sum(x * y))
+}
+
+GradientDescent<-function(x_train, cnt, alpha = 0.05, thres = 0.0001)
+{
+  m<-nrow(x_train)
+  n<-ncol(x_train)
+  set.seed(1)
+  origin_beta <-as.matrix(runif(n, min = 0, max = 0.01))
+  new_beta <- origin_beta
+  y_hat <- x_train%*%new_beta
+  J <- (1/(2*m))* sum((y_hat - cnt)^2)
+  DJ <- thres + 1
+  i = 0
+  while(is.na(DJ) == TRUE|DJ > thres){
+    i = i + 1
+    Jp <- J
+    new_beta <- new_beta - (alpha/m)*apply(x_train, 2, GetCal, y = (y_hat - cnt))
+    beta <- matrix(data = new_beta, nrow = ncol(x_train),ncol = 1,byrow = FALSE)
+    y_hat <- x_train%*%new_beta
+    J <- (1/(2*m))* sum((y_hat - cnt)^2)
+    DJ <- abs((Jp-J)/Jp)
+    if (is.infinite(J)) break
+  }
+  return(list('origin_beta'= origin_beta,'i'=i, 'cost'=J, 'Delta_J'=DJ, 'Beta'= beta, 'alpha'=alpha,'thres'=thres))
+}
+
+```
+
+```{r}
+getmymodel <- GradientDescent(x_train, cnt, alpha = 0.05, thres = 0.0001)
+print(getmymodel)
+  origin_bata <- as.data.frame(getmymodel$origin_beta)
+  origin_bata
+  
+```
+
+
+experimentation 1
+```{r}
+alpha_1 <- seq(0.01,0.1,by = 0.01)
+reg_train <- list()
+alpha_name <- c("alpha")
+rowname <- c()
+cost_name <-c("cost")
+alpha_train <- matrix(nrow = 10, ncol =1, byrow = FALSE, dimnames = list(rowname,alpha_name))
+cost_train <- matrix(nrow = 10, ncol =1, byrow = FALSE, dimnames = list(rowname,cost_name))
+
+pred <- function(x_test, y_test,beta){
+  y_hat <- x_test%*%beta
+  m<-nrow(x_test)
+  J <- (1/(2*m))* sum((y_hat - y_test)^2)
+  r_square <- 1 - ((sum((y_hat - y_test)^2))/(sum((y_test-(y_test/nrow(y_test)))^2)))
+  RMSE <- sqrt(sum((y_test - y_hat)^2/nrow(y_test)))
+  return(list("cost"=J,"R_square"=r_square,"RMSE" = RMSE))
+}
+
+cost_test <- c()
+train_result <- data.frame()
+alpha_train<- list()
+cost_train <- list()   
+cost_test <- list()
+for (i in 1:length(alpha_1)){
+                             model_train  <- GradientDescent(x_train = x_train, cnt = cnt, alpha = alpha_1[i],thres = 0.0001)
+                              reg_train[[i]] <- model_train
+                              alpha_train[[i]] <- model_train$alpha
+                              cost_train[[i]] <- model_train$cost
+                              cost_test[[i]] <- pred(x_test, y_test, model_train$Beta) 
+}
+train_result <- as.data.frame(cbind(alpha_train, cost_train))
+my_list <- list()
+R_list <- list()
+RMSE_list <- list()
+RMSE <-list()
+for (i in 1:length(cost_test)){
+  test_result <- cost_test[[i]][1]
+  my_list <- append(my_list,test_result)
+  R_result <- cost_test[[i]][2]
+  R_list <- append(R_list,R_result)
+  RMSE_list <- cost_test[[i]][3]
+  RMSE <- append(RMSE_list,RMSE)
+  
+}
+RMSE
+R_Result <- t(data.frame(R_list))
+R_Result <-data.frame(R_Result)
+RMSE <- t(data.frame(RMSE))
+RMSE <- data.frame(RMSE)
+RMSE_order <- order(RMSE,decreasing = TRUE)
+RMSE <- RMSE[RMSE_order,]
+cost_result <- data.frame(my_list)
+cost_result <- t(cost_result)
+rownames(R_Result) = NULL
+rownames(RMSE) = NULL
+rownames(cost_result) = NULL
+test_result <- cbind(alpha_1,cost_result,R_Result,RMSE)
+colnames(test_result) = c("alpha","cost","R_square","RMSE")
+test_result
+
+
+library(MASS)
+box_cox <- boxcox(cnt~., data = final_data)
+i <- which(box_cox$y == max(box_cox$y))
+parm <- box_cox$x[i]
+parm
+
+
+
+
+
+
+
+
+result <- cbind(train_result,test_result)
+
+library(ggplot2)
+ggplot(data = result) + geom_point( mapping = aes(x = alpha, y = cost)) + geom_line( mapping = aes(x = alpha, y = cost)) +
+                        geom_point( mapping = aes(x = alpha, y = cost_test))+geom_line( mapping = aes(x = alpha, y = cost_test))
+
+pred_1<- pred(x_test, y_test, model_train$Beta)
+
+```
+
+experimentation2
+```{r}
+threshold <- seq(0.0001,0.001,by = 0.0001)
+thres_name <- c("thres")
+thres_train <- matrix(nrow = 10, ncol =1, byrow = FALSE, dimnames = list(rowname,thres_name))
+cost_train_thres <- matrix(nrow = 10, ncol =1, byrow = FALSE, dimnames = list(rowname,cost_name))
+
+cost_test_thres <- c()
+train_result <- data.frame()
+for (i in 1:length(threshold)){
+                             model_train_thres  <- GradientDescent(x_train = x_train, cnt = cnt, alpha = 0.05,thres = 
+                                                                     threshold[i])
+                             thres_train[i] <- model_train_thres$thres
+                             cost_train_thres[i] <- model_train_thres$cost
+                             cost_test_thres[i] <- pred(x_test, y_test, model_train_thres$Beta) 
+}
+train_result_thres <- as.data.frame(cbind(thres_train, cost_train_thres))    
+test_result_thres <- as.data.frame(cbind(thres_train, cost_test_thres))
+result_thres <- cbind(train_result_thres,test_result_thres)
+
+ggplot(data = result_thres) + geom_point( mapping = aes(x = threshold, y = cost)) + 
+                              geom_line( mapping = aes(x = threshold, y = cost)) +
+                              geom_point( mapping = aes(x = threshold, y = cost_test_thres))+
+                              geom_line( mapping = aes(x = threshold, y = cost_test_thres))
+
+
+```
+
+```{r}
+GradientDescent_1<-function(x_train, cnt, alpha = 0.05, thres = 0.0001,K)
+{
+  m<-nrow(x_train)
+  n<-ncol(x_train)
+  set.seed(1)
+  origin_beta <-as.matrix(runif(n, min = 0, max = 0.01))
+  new_beta <- origin_beta
+  y_hat <- x_train%*%new_beta
+  J <- (1/(2*m))* sum((y_hat - cnt)^2)
+  DJ <- thres + 1
+  i = 0
+  while(TRUE){
+    i = i + 1
+    Jp <- J
+    new_beta <- new_beta - (alpha/m)*apply(x_train, 2, GetCal, y = (y_hat - cnt))
+    beta <- matrix(data = new_beta, nrow = ncol(x_train),ncol = 1,byrow = FALSE)
+    y_hat <- x_train%*%new_beta
+    J <- (1/(2*m))* sum((y_hat - cnt)^2)
+    DJ <- abs((Jp-J)/Jp)
+    if ( i == K ) break
+  }
+  return(list('origin_beta'= origin_beta,"iterations"=i, 'cost'=J, 'Delta_J'=DJ, 'Beta'= beta, 'alpha'=alpha))
+}
+```
+
+```{r}
+K <- seq(100,2000,100)
+name <- c("iterations")
+iterations_train <- matrix(nrow = 20, ncol =1, byrow = FALSE, dimnames = list(rowname,name))
+cost_train_iterations <- matrix(nrow = 20, ncol =1, byrow = FALSE, dimnames = list(rowname,cost_name))
+cost_test_iterations <- c()
+train_result <- data.frame()
+for (i in 1:length(K)){
+  mymodel <- GradientDescent_1(x_train,cnt,alpha = 0.05,thres = 0.0001,K = K[i])
+  iterations_train[i] <- mymodel$iterations
+  cost_train_iterations[i] <- mymodel$cost
+  cost_test_iterations[i] <- pred(x_test, y_test,mymodel$Beta)
+}
+train_result_iterations <- as.data.frame(cbind(iterations_train, cost_train_iterations))    
+test_result_iterations <- as.data.frame( cost_test_iterations)
+result_iterations <- cbind(train_result_iterations,test_result_iterations)
+
+ggplot(data = result_iterations) + geom_point( mapping = aes(x = iterations, y = cost)) + 
+                                   geom_line( mapping = aes(x = iterations, y = cost)) +
+                                   geom_point( mapping = aes(x = iterations, y = cost_test_iterations))+
+                                   geom_line( mapping = aes(x = iterations, y = cost_test_iterations))
+```
+
+experimentation3
+
+```{r}
+dummy_data_all <-   cbind(spring,summer,fall,month_1,month_2,month_3,month_4,month_5,month_6,month_7,month_8,month_9,month_10,
+                          month_11,hour_0,hour_1,hour_2,hour_3,hour_4,hour_5,hour_6,hour_7,hour_8,hour_9,hour_10,hour_11,
+                          hour_12,hour_13,hour_14,hour_15,hour_16,hour_17,hour_18,hour_19,hour_20,hour_21,hour_22,
+                          weather_1,weather_2,weather_3)
+all_var <- cbind(data_1,hour[,c(7,9,11:14,17)],dummy_data_all) 
+all_train <- all_var[ind==1,]
+all_test <- all_var[ind==2,]
+all_train_x <- as.matrix(all_train[-8])
+all_train_y <- all_train$cnt
+all_test_x <- as.matrix(all_test[-8])
+all_test_y <- all_test$cnt
+
+all_model <- GradientDescent(all_train_x, all_train_y)
+print(all_model)
+all_cost <- all_model$cost
+
+all_pred_cost<- pred(all_test_x,all_test_y,all_model$Beta)
+```
+
+
+```{r}
+random_data <- hour[,c(3,5:14)]
+random <- sample(random_data,3)
+random_dummy <- cbind( weather_1,weather_2,weather_3 )
+random_var <-cbind(data_1,random[-3],random_dummy,hour[17])
+random_train <- random_var[ind==1,]
+random_test <- random_var[ind==2,]
+random_train_x <- as.matrix(random_train[-7])
+random_train_y <- random_train$cnt
+random_test_x <- as.matrix(random_test[-7])
+random_test_y <- random_test$cnt
+
+random_model <- GradientDescent(random_train_x,random_train_y)
+print(random_model)
+random_cost <- random_model$cost
+
+random_pred_cost <- pred(random_test_x,random_test_y,random_model$Beta)
+
+outcome <- cbind(all_cost, all_pred_cost,random_cost,random_pred_cost)
+outcome
+```
+
+experimentation4
+```{r}
+my_dummy <- cbind(hour_0,hour_1,hour_2,hour_3,hour_4,hour_5,hour_6,hour_7,hour_8,hour_9,hour_10,hour_11,hour_12,hour_13,
+                  hour_14,hour_15,hour_16,hour_17,hour_18,hour_19,hour_20,hour_21,hour_22)
+my_data <- cbind(data_1,hour[,c(11,13,17)],my_dummy)
+my_train <- my_data[ind==1,]
+my_test <- my_data[ind==2,]
+my_train_x <- as.matrix(my_train[-4])
+my_train_y <- my_train$cnt
+my_test_x <- as.matrix(my_test[-4])
+my_test_y <- my_test$cnt
+
+my_model <- GradientDescent(my_train_x, my_train_y)
+my_model_cost <- my_model$cost
+
+my_pred_cost<- pred(my_test_x,my_test_y,my_model$Beta)
+outcome_1 <- cbind(outcome,my_model_cost,my_pred_cost)
+outcome_1
+
+```
+
+
+
+
